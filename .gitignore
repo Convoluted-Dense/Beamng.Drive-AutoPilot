@@ -1,0 +1,23 @@
+# Ignore virtual environments
+.venv/
+env/
+venv/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Logs and junk
+*.log
+*.tmp
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Optional: ignore auto-generated images
+Frames/
