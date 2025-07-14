@@ -57,9 +57,9 @@ def steering_wheel_capture():
     right_val = np.sum(result[:, mid:] == 255)
 
     if left_val > right_val:
-        return -left_val
+        return -left_val/2464
     elif right_val > left_val:
-        return right_val
+        return right_val/2464
     return 0
 
 def on_press(key):
@@ -76,55 +76,73 @@ if __name__ == "__main__":
     count = 0
     print("Press ESC to stop capturing.")
 
+    log_path = "steering_log.txt"
+    log_file = open(log_path, "a")
+
     try:
         while not stop_flag:
             # === LEFT KEY ===
             pyautogui.keyDown('left')
             time.sleep(0.2)  # Let input settle
-            for _ in range(3):
-                filename = os.path.join(output_dir, f'screenshot_{count}.png')
+            left_accum = 0
+            for i in range(10):
+                left_accum += 0.05
+                timestamp = time.strftime('%Y%m%d_%H%M%S')
+                filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
                 save_screenshot(filename)
                 angle = steering_wheel_capture()
-                print(f"[LEFT] Screenshot saved: {filename} | val: {angle}")
+                adjusted_angle = angle + left_accum
+                print(f"[LEFT] Screenshot saved: {filename} | val: {adjusted_angle}")
+                log_file.write(f"{os.path.basename(filename)},{adjusted_angle}\n")
                 count += 1
-                time.sleep(1)
+                time.sleep(0.2)
             pyautogui.keyUp('left')
 
             # === NUM5 ACTION ===
             pyautogui.press('num5')
             time.sleep(0.2)
-            for _ in range(3):
-                filename = os.path.join(output_dir, f'screenshot_{count}.png')
+            for _ in range(10):
+                timestamp = time.strftime('%Y%m%d_%H%M%S')
+                filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
                 save_screenshot(filename)
                 angle = steering_wheel_capture()
                 print(f"[NUM5] Screenshot saved: {filename} | val: {angle}")
+                log_file.write(f"{os.path.basename(filename)},{angle}\n")
                 count += 1
-                time.sleep(1)
+                time.sleep(0.2)
 
             # === RIGHT KEY ===
             pyautogui.keyDown('right')
             time.sleep(0.2)
-            for _ in range(5):
-                filename = os.path.join(output_dir, f'screenshot_{count}.png')
+            right_accum = 0
+            for i in range(10):
+                right_accum -= 0.05
+                timestamp = time.strftime('%Y%m%d_%H%M%S')
+                filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
                 save_screenshot(filename)
                 angle = steering_wheel_capture()
-                print(f"[RIGHT] Screenshot saved: {filename} | val: {angle}")
+                adjusted_angle = angle + right_accum
+                print(f"[RIGHT] Screenshot saved: {filename} | val: {adjusted_angle}")
+                log_file.write(f"{os.path.basename(filename)},{adjusted_angle}\n")
                 count += 1
-                time.sleep(1)
+                time.sleep(0.2)
             pyautogui.keyUp('right')
 
             # === NUM5 AGAIN ===
             pyautogui.press('num5')
             time.sleep(0.2)
-            for _ in range(3):
-                filename = os.path.join(output_dir, f'screenshot_{count}.png')
+            for _ in range(10):
+                timestamp = time.strftime('%Y%m%d_%H%M%S')
+                filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
                 save_screenshot(filename)
                 angle = steering_wheel_capture()
                 print(f"[NUM5] Screenshot saved: {filename} | val: {angle}")
+                log_file.write(f"{os.path.basename(filename)},{angle}\n")
                 count += 1
-                time.sleep(1)
+                time.sleep(0.2)
 
     except KeyboardInterrupt:
         print("Screenshot capture stopped by Ctrl+C.")
-
-    listener.stop()
+    finally:
+        log_file.close()
+        listener.stop()
