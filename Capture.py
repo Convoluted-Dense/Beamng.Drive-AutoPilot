@@ -34,6 +34,10 @@ def save_screenshot(filename):
         "height": 300   
     }
     img = capture_screen(region)
+    img = cv2.GaussianBlur(img, (5, 5), 0) 
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
+    img = cv2.resize(img, (200, 66))
+    #img = img/255.0  # Normalize pixel values to [0, 1]
     cv2.imwrite(filename, img)
 
 def steering_wheel_capture():
