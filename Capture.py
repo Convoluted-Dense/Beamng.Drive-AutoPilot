@@ -68,7 +68,7 @@ def steering_wheel_capture():
 
 def on_press(key):
     global stop_flag
-    if key == keyboard.Key.esc:
+    if key == keyboard.Key.num_lock:
         stop_flag = True
         print("Screenshot capture stopped by ESC key.")
 
@@ -80,6 +80,11 @@ if __name__ == "__main__":
     count = 0
     print("Press ESC to stop capturing.")
 
+    print("Starting in 5 seconds...")
+    for i in range(5, 0, -1):
+        print(f"{i}...")
+        time.sleep(1)
+
     log_path = "steering_log.txt"
     log_file = open(log_path, "a")
 
@@ -90,6 +95,8 @@ if __name__ == "__main__":
             time.sleep(0.2)  # Let input settle
             left_accum = 0
             for i in range(10):
+                if stop_flag:
+                    break
                 left_accum += 0.05
                 timestamp = time.strftime('%Y%m%d_%H%M%S')
                 filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
@@ -106,6 +113,8 @@ if __name__ == "__main__":
             pyautogui.press('num5')
             time.sleep(0.2)
             for _ in range(10):
+                if stop_flag:
+                    break
                 timestamp = time.strftime('%Y%m%d_%H%M%S')
                 filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
                 save_screenshot(filename)
@@ -120,6 +129,8 @@ if __name__ == "__main__":
             time.sleep(0.2)
             right_accum = 0
             for i in range(10):
+                if stop_flag:
+                    break
                 right_accum -= 0.05
                 timestamp = time.strftime('%Y%m%d_%H%M%S')
                 filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
@@ -136,6 +147,8 @@ if __name__ == "__main__":
             pyautogui.press('num5')
             time.sleep(0.2)
             for _ in range(10):
+                if stop_flag:
+                    break
                 timestamp = time.strftime('%Y%m%d_%H%M%S')
                 filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
                 save_screenshot(filename)
