@@ -28,15 +28,18 @@ def augment_image(img):
     hsv[:,:,2] = np.clip(hsv[:,:,2] * ratio, 0, 255)
     img = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
 
-    # Random shadow
+    # Random shadow bands
     h, w = img.shape[:2]
-    x1, y1 = np.random.randint(0, w), 0
-    x2, y2 = np.random.randint(0, w), h
-    shadow_mask = np.zeros_like(img[:,:,0])
-    polygon = np.array([[x1, y1], [x2, y2], [w, h], [0, h]], np.int32)
-    cv2.fillPoly(shadow_mask, [polygon], 255)
-    rand_alpha = np.random.uniform(0.5, 0.85)
-    img[shadow_mask==255] = (img[shadow_mask==255] * rand_alpha).astype(np.uint8)
+    num_bands = np.random.randint(1, 4)  # 1 to 3 bands
+    for _ in range(num_bands):
+        band_width = np.random.randint(w//8, w//3)
+        x_start = np.random.randint(0, w - band_width)
+        y_start = np.random.randint(0, h - 10)
+        y_end = np.random.randint(y_start + 10, min(h, y_start + h//2))
+        shadow_mask = np.zeros_like(img[:,:,0])
+        cv2.rectangle(shadow_mask, (x_start, y_start), (x_start + band_width, y_end), 255, -1)
+        rand_alpha = np.random.uniform(0.5, 0.85)
+        img[shadow_mask==255] = (img[shadow_mask==255] * rand_alpha).astype(np.uint8)
 
     # Random noise
     noise = np.random.normal(0, 0.03, img.shape) * 255
@@ -93,7 +96,7 @@ history = model.fit(
 )
 
 # Save model
-model.save("v1.h5")
+model.save("models/v2.1.h5")
 
 # Plot and save loss vs epoch graph
 
@@ -106,4 +109,4 @@ plt.title('Loss vs Epoch')
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
-plt.savefig('v1.png')
+plt.savefig('loss_log/v2.1.png')

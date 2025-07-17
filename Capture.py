@@ -4,9 +4,10 @@ import os
 import cv2
 import time
 import pyautogui
+import pyvjoy
 from pynput import keyboard
 
-# === Setup ===
+# === Setup ===555
 output_dir = os.path.abspath("Frames")
 os.makedirs(output_dir, exist_ok=True)
 mss_instance = mss.mss()
@@ -88,10 +89,12 @@ if __name__ == "__main__":
     log_path = "steering_log.txt"
     log_file = open(log_path, "a")
 
+    vjoy = pyvjoy.VJoyDevice(1)
+
     try:
         while not stop_flag:
             # === LEFT KEY ===
-            pyautogui.keyDown('left')
+            vjoy.set_button(1, 1)  # Press left
             time.sleep(0.2)  # Let input settle
             left_accum = 0
             for i in range(10):
@@ -107,10 +110,11 @@ if __name__ == "__main__":
                 log_file.write(f"{os.path.basename(filename)},{adjusted_angle}\n")
                 count += 1
                 time.sleep(0.2)
-            pyautogui.keyUp('left')
+            vjoy.set_button(1, 0)  # Release left
 
             # === NUM5 ACTION ===
-            pyautogui.press('num5')
+            vjoy.set_button(3, 1)
+            vjoy.set_button(3, 0)
             time.sleep(0.2)
             for _ in range(10):
                 if stop_flag:
@@ -125,7 +129,7 @@ if __name__ == "__main__":
                 time.sleep(0.2)
 
             # === RIGHT KEY ===
-            pyautogui.keyDown('right')
+            vjoy.set_button(2, 1)  # Press right
             time.sleep(0.2)
             right_accum = 0
             for i in range(10):
@@ -141,10 +145,11 @@ if __name__ == "__main__":
                 log_file.write(f"{os.path.basename(filename)},{adjusted_angle}\n")
                 count += 1
                 time.sleep(0.2)
-            pyautogui.keyUp('right')
+            vjoy.set_button(2, 0)  # Release right
 
             # === NUM5 AGAIN ===
-            pyautogui.press('num5')
+            vjoy.set_button(3, 1)
+            vjoy.set_button(3, 0)
             time.sleep(0.2)
             for _ in range(10):
                 if stop_flag:
