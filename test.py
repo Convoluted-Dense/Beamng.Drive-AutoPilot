@@ -7,7 +7,7 @@ import time
 import pyvjoy
 
 # Load model without compiling, then recompile
-model = keras.models.load_model("models/v2.1.h5", compile=False)
+model = keras.models.load_model("models/v3.1.h5", compile=False)
 model.compile(optimizer="adam", loss="mse")
 
 # Initialize vJoy device (ID 1 by default)

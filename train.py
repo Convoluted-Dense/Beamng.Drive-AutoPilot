@@ -90,13 +90,13 @@ steps_per_epoch = len(img_paths) // batch_size
 history = model.fit(
     batch_generator(img_paths, angles, batch_size),
     steps_per_epoch=steps_per_epoch,
-    epochs=10,
+    epochs=25,
     validation_data=batch_generator(img_paths, angles, batch_size),
     validation_steps=max(1, steps_per_epoch//10)
 )
 
 # Save model
-model.save("models/v2.1.h5")
+model.save("models/v3.1.h5")
 
 # Plot and save loss vs epoch graph
 
@@ -109,4 +109,4 @@ plt.title('Loss vs Epoch')
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
-plt.savefig('loss_log/v2.1.png')
+plt.savefig('loss_log/v3.1.png')

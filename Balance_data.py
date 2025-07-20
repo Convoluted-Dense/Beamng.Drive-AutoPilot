@@ -40,14 +40,24 @@ with open("steering_log_balanced.txt", "w") as f:
 
 # Plot the balanced distribution
 from collections import Counter
+import numpy as np
+
 angles = [angle for _, angle in balanced]
 angle_counts = Counter(angles)
 
 plt.figure(figsize=(10,5))
-plt.bar(angle_counts.keys(), angle_counts.values(), color='g')
+
+# Define bins with step 0.1 for more defined x-axis
+bins = np.arange(min(angles), max(angles) + 0.1, 0.1)
+hist, bin_edges = np.histogram(angles, bins=bins)
+
+bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+plt.bar(bin_centers, hist, width=0.09, color='g', align='center')
+
 plt.xlabel('Steering Angle')
 plt.ylabel('Number of Images')
 plt.title('Balanced: Number of Images per Steering Angle')
 plt.grid(True)
 plt.tight_layout()
+plt.xticks(np.round(bin_centers, 2), rotation=90)
 plt.show()
