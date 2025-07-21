@@ -3,11 +3,12 @@ import numpy as np
 import cv2
 import tensorflow as tf
 from tensorflow import keras
+from keras.layers import Dropout
 import matplotlib.pyplot as plt
 
 # Paths
 data_dir = os.path.abspath("Frames")
-log_path = "steering_log_balanced.txt"
+log_path = "steering_log.txt"
 
 # Load data
 img_paths = []
@@ -18,10 +19,28 @@ with open(log_path, "r") as f:
         if len(parts) == 2:
             img_paths.append(os.path.join(data_dir, parts[0]))
             angles.append(float(parts[1]))
+# Load validation data
+val_data_dir = os.path.abspath("val_Frames")
+val_log_path = "val_steering_log.txt"
+
+val_img_paths = []
+val_angles = []
+
+with open(val_log_path, "r") as f:
+    for line in f:
+        parts = line.strip().split(",")
+        if len(parts) == 2:
+            val_img_paths.append(os.path.join(val_data_dir, parts[0]))
+            val_angles.append(float(parts[1]))
 
 
 # Augmentation functions
-def augment_image(img):
+def augment_image(img, angle):
+    # Random horizontal flip
+    if np.random.rand() < 0.5:
+        img = cv2.flip(img, 1)  # Flip image horizontally
+        angle = -angle          # Invert steering angle
+
     # Random brightness
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     ratio = 0.5 + np.random.uniform()
@@ -30,7 +49,7 @@ def augment_image(img):
 
     # Random shadow bands
     h, w = img.shape[:2]
-    num_bands = np.random.randint(1, 4)  # 1 to 3 bands
+    num_bands = np.random.randint(1, 4)
     for _ in range(num_bands):
         band_width = np.random.randint(w//8, w//3)
         x_start = np.random.randint(0, w - band_width)
@@ -46,7 +65,7 @@ def augment_image(img):
     img = np.clip(img + noise, 0, 255).astype(np.uint8)
 
     img = img.astype(np.float32) / 255.0
-    return img
+    return img, angle
 
 # Batch generator
 def batch_generator(img_paths, angles, batch_size):
@@ -59,10 +78,26 @@ def batch_generator(img_paths, angles, batch_size):
             batch_angles = []
             for idx in batch_indices:
                 img = cv2.imread(img_paths[idx])
+                angle = angles[idx]
                 if img is not None:
-                    img = augment_image(img)
+                    img, angle = augment_image(img, angle)
                     batch_imgs.append(img)
-                    batch_angles.append(angles[idx])
+                    batch_angles.append(angle)
+            yield np.array(batch_imgs), np.array(batch_angles)
+
+# Validation generator (no augmentation)
+def val_batch_generator(img_paths, angles, batch_size):
+    num_samples = len(img_paths)
+    while True:
+        for offset in range(0, num_samples, batch_size):
+            batch_paths = img_paths[offset:offset+batch_size]
+            batch_angles = angles[offset:offset+batch_size]
+            batch_imgs = []
+            for path in batch_paths:
+                img = cv2.imread(path)
+                if img is not None:
+                    img = img.astype(np.float32) / 255.0  # Normalize only
+                    batch_imgs.append(img)
             yield np.array(batch_imgs), np.array(batch_angles)
 
 # NVIDIA PilotNet model
@@ -70,10 +105,12 @@ model = keras.Sequential([
     keras.layers.Conv2D(24, (5, 5), strides=(2, 2), activation='relu', input_shape=(66, 200, 3)),
     keras.layers.Conv2D(36, (5, 5), strides=(2, 2), activation='relu'),
     keras.layers.Conv2D(48, (5, 5), strides=(2, 2), activation='relu'),
+    keras.layers.Dropout(0.5),  # Add dropout for regularization
     keras.layers.Conv2D(64, (3, 3), activation='relu'),
     keras.layers.Conv2D(64, (3, 3), activation='relu'),
     keras.layers.Flatten(),
     keras.layers.Dense(100, activation='relu'),
+    keras.layers.Dropout(0.5),  # Add dropout for regularization
     keras.layers.Dense(50, activation='relu'),
     keras.layers.Dense(10, activation='relu'),
     keras.layers.Dense(1)
@@ -90,13 +127,15 @@ steps_per_epoch = len(img_paths) // batch_size
 history = model.fit(
     batch_generator(img_paths, angles, batch_size),
     steps_per_epoch=steps_per_epoch,
-    epochs=25,
-    validation_data=batch_generator(img_paths, angles, batch_size),
-    validation_steps=max(1, steps_per_epoch//10)
-)
+    epochs=50,
+    validation_data=val_batch_generator(val_img_paths, val_angles, batch_size),
+    validation_steps=max(1, len(val_img_paths) // batch_size)
 
+)
+os.makedirs("models", exist_ok=True)
+os.makedirs("loss_log", exist_ok=True)
 # Save model
-model.save("models/v3.1.h5")
+model.save("models/v4.h5")
 
 # Plot and save loss vs epoch graph
 
@@ -109,4 +148,4 @@ plt.title('Loss vs Epoch')
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
-plt.savefig('loss_log/v3.1.png')
+plt.savefig('loss_log/v4')

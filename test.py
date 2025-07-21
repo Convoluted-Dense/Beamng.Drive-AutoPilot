@@ -7,7 +7,7 @@ import time
 import pyvjoy
 
 # Load model without compiling, then recompile
-model = keras.models.load_model("models/v3.1.h5", compile=False)
+model = keras.models.load_model("models/v4.h5", compile=False)
 model.compile(optimizer="adam", loss="mse")
 
 # Initialize vJoy device (ID 1 by default)
@@ -23,6 +23,13 @@ region = {
 }
 
 def preprocess(img):
+    # Crop the center region to match training crop (e.g., crop_margin=200)
+    crop_margin = 200  # Use the same value as max_shift in training
+    h, w = img.shape[:2]
+    if w > 2 * crop_margin:
+        img = img[:, crop_margin:w-crop_margin]
+    # Now continue with the rest of preprocessing
+    img = cv2.resize(img, (1920, 300))
     img = cv2.GaussianBlur(img, (5, 5), 0)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
     img = cv2.resize(img, (200, 66))
@@ -36,11 +43,11 @@ try:
         img = np.array(screenshot)
         img = preprocess(img)
         img = np.expand_dims(img, axis=0)
-        pred = float(model.predict(img)[0][0])
+        pred = float(model.predict(img)[0][0]) *1.5
 
         # Map prediction (-1 to 1) to X axis value (1 to 32768, center=16384)
         # vJoy expects values in [1, 32768]
-        pred = max(-1.0, min(1.0, pred))*1.5
+        pred = max(-1.0, min(1.0, pred))
         x_val = int((pred + 1) * 16384)
         x_val = max(1, min(32768, x_val))
         vjoy.set_axis(pyvjoy.HID_USAGE_X, x_val)
