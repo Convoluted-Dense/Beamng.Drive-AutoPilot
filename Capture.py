@@ -6,13 +6,17 @@ import time
 import pyautogui
 import pyvjoy
 from pynput import keyboard
-import random
 
-# === Setup ===555
-output_dir = os.path.abspath("val_Frames")
+# === Setup ===
+output_dir = os.path.abspath("Frames")
 os.makedirs(output_dir, exist_ok=True)
 mss_instance = mss.mss()
 stop_flag = False
+
+
+
+shift = 15
+main_cam = 70
 
 def capture_screen(region=None):
     """
@@ -25,44 +29,18 @@ def capture_screen(region=None):
     img = np.array(screenshot)
     return img
 
-def save_screenshot(filename,max_shift, shift=0):
+def save_screenshot(filename):
     """
-    Save a screenshot of the AOI from the secondary monitor, with optional lateral shift.
-    Always crop for the maximum possible shift to ensure consistent region.
+    Save a screenshot of the AOI from the secondary monitor.
     """
     region = {
-        "top": 500,
-        "left": 2560,
-        "width": 1920,
-        "height": 300
+        "top": 525,        
+        "left": 2560,         
+        "width": 1920,         
+        "height": 225   
     }
     img = capture_screen(region)
-    height, width = img.shape[:2]
-      # Make sure this matches your main loop's max_shift
-
-    # Apply random lateral shift if specified
-    if shift != 0:
-        src_points = np.float32([
-            [0, 0],
-            [width, 0],
-            [width, height],
-            [0, height]
-        ])
-        dst_points = np.float32([
-            [shift, 0],
-            [width + shift, 0],
-            [width - shift, height],
-            [-shift, height]
-        ])
-        matrix = cv2.getPerspectiveTransform(src_points, dst_points)
-        img = cv2.warpPerspective(img, matrix, (width, height))
-
-    # Always crop for the maximum possible shift to avoid black pixels
-    crop_margin = int(abs(max_shift))
-    img = img[:, crop_margin:width-crop_margin]
-    img = cv2.resize(img, (1920, 300))  # Resize back to original region
-
-    img = cv2.GaussianBlur(img, (5, 5), 0)
+    img = cv2.GaussianBlur(img, (5, 5), 0) 
     img = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
     img = cv2.resize(img, (200, 66))
     cv2.imwrite(filename, img)
@@ -97,7 +75,7 @@ def on_press(key):
     global stop_flag
     if key == keyboard.Key.f6:
         stop_flag = True
-        print("Screenshot capture stopped by ESC key.")
+        print("Screenshot capture stopped by f6.")
 
 # === Main Loop ===
 if __name__ == "__main__":
@@ -112,30 +90,90 @@ if __name__ == "__main__":
         print(f"{i}...")
         time.sleep(1)
 
-    log_path = "val_steering_log.txt"
+    log_path = "steering_log.txt"
     log_file = open(log_path, "a")
 
     vjoy = pyvjoy.VJoyDevice(1)
-    max_shift = 0
+
+    vjoy.set_button(3, 1)
+    vjoy.set_button(3, 0)
 
     try:
         while not stop_flag:
-            # Generate a random shift between -max_shift and +max_shift (e.g., -60 to 60)
-            shift = random.randint(-max_shift, max_shift)
-            timestamp = time.strftime('%Y%m%d_%H%M%S')
-            filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
-            save_screenshot(filename, shift=shift,max_shift=max_shift)
-            angle = steering_wheel_capture()
-            # Compensate steering angle for shift: if shift is negative, add positive compensation, and vice versa
-            if max_shift == 0:
-              compensation = 0
-            else:
-              compensation = round(-shift / (max_shift * 10), 3)
-            adjusted_angle = round(angle + compensation, 3)
-            print(f"[CAPTURE] Screenshot saved: {filename} | val: {adjusted_angle} | shift: {shift}")
-            log_file.write(f"{os.path.basename(filename)},{adjusted_angle}\n")
-            count += 1
+
+            # === LEFT KEY ===
+            vjoy.set_button(1, 1)  # Press left
+            time.sleep(0.2)  # Let input settle
+            left_accum = 0
+            for i in range(shift):
+                if stop_flag:
+                    break
+                left_accum += 0.02
+                timestamp = time.strftime('%Y%m%d_%H%M%S')
+                filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
+                save_screenshot(filename)
+                angle = steering_wheel_capture()
+                adjusted_angle = round(angle + left_accum, 3)
+                print(f"[LEFT] Screenshot saved: {filename} | val: {adjusted_angle}")
+                log_file.write(f"{os.path.basename(filename)},{adjusted_angle}\n")
+                count += 1
+                time.sleep(0.2)
+            vjoy.set_button(1, 0)  # Release left
+
+            # === NUM5 ACTION ===
+            vjoy.set_button(3, 1)
+            vjoy.set_button(3, 0)
             time.sleep(0.2)
+
+            for _ in range(main_cam):
+                if stop_flag:
+                    break
+                timestamp = time.strftime('%Y%m%d_%H%M%S')
+                filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
+                save_screenshot(filename)
+                angle = steering_wheel_capture()
+                angle = round(angle, 3)
+                print(f"[NUM5] Screenshot saved: {filename} | val: {angle}")
+                log_file.write(f"{os.path.basename(filename)},{angle}\n")
+                count += 1
+                time.sleep(0.2)
+
+            # === RIGHT KEY ===
+            vjoy.set_button(2, 1)  # Press right
+            time.sleep(0.2)
+            right_accum = 0
+            for i in range(shift):
+                if stop_flag:
+                    break
+                right_accum -= 0.02
+                timestamp = time.strftime('%Y%m%d_%H%M%S')
+                filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
+                save_screenshot(filename)
+                angle = steering_wheel_capture()
+                adjusted_angle = round(angle + right_accum, 3)
+                print(f"[RIGHT] Screenshot saved: {filename} | val: {adjusted_angle}")
+                log_file.write(f"{os.path.basename(filename)},{adjusted_angle}\n")
+                count += 1
+                time.sleep(0.2)
+            vjoy.set_button(2, 0)  # Release right
+
+            # === NUM5 AGAIN ===
+            vjoy.set_button(3, 1)
+            vjoy.set_button(3, 0)
+            
+
+            for _ in range(main_cam):
+                if stop_flag:
+                    break
+                timestamp = time.strftime('%Y%m%d_%H%M%S')
+                filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
+                save_screenshot(filename)
+                angle = steering_wheel_capture()
+                angle = round(angle, 3)
+                print(f"[NUM5] Screenshot saved: {filename} | val: {angle}")
+                log_file.write(f"{os.path.basename(filename)},{angle}\n")
+                count += 1
+                time.sleep(0.2)
 
     except KeyboardInterrupt:
         print("Screenshot capture stopped by Ctrl+C.")

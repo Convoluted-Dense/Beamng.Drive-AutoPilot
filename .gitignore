@@ -26,7 +26,7 @@ Frames/
 steering_log.txt
 steering_log_balanced.txt
 controller_test
-shift
+x
 val_steering_log.txt
 val_steering_log_balanced.txt
 val_Frames/
