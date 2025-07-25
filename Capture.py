@@ -15,7 +15,7 @@ stop_flag = False
 
 
 
-shift = 15
+shift = 20
 main_cam = 70
 
 def capture_screen(region=None):
@@ -28,6 +28,8 @@ def capture_screen(region=None):
     screenshot = mss_instance.grab(monitor)
     img = np.array(screenshot)
     return img
+
+
 
 def save_screenshot(filename):
     """
@@ -49,7 +51,7 @@ def steering_wheel_capture():
     """
     Analyze the steering wheel UI area and return signed pixel count.
     """
-    region = {"top": 1050, "left": 3405, "width": 230, "height": 25}
+    region = {"top": 1050, "left": 3404, "width": 230, "height": 4}
     img = capture_screen(region)
 
     if img.shape[2] == 4:
@@ -66,9 +68,9 @@ def steering_wheel_capture():
     right_val = np.sum(result[:, mid:] == 255)
 
     if left_val > right_val:
-        return -left_val/2464
+        return -left_val/448
     elif right_val > left_val:
-        return right_val/2464
+        return right_val/448
     return 0
 
 def on_press(key):
@@ -102,23 +104,25 @@ if __name__ == "__main__":
         while not stop_flag:
 
             # === LEFT KEY ===
-            vjoy.set_button(1, 1)  # Press left
-            time.sleep(0.2)  # Let input settle
-            left_accum = 0
-            for i in range(shift):
-                if stop_flag:
-                    break
-                left_accum += 0.02
-                timestamp = time.strftime('%Y%m%d_%H%M%S')
-                filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
-                save_screenshot(filename)
-                angle = steering_wheel_capture()
-                adjusted_angle = round(angle + left_accum, 3)
-                print(f"[LEFT] Screenshot saved: {filename} | val: {adjusted_angle}")
-                log_file.write(f"{os.path.basename(filename)},{adjusted_angle}\n")
-                count += 1
-                time.sleep(0.2)
-            vjoy.set_button(1, 0)  # Release left
+            if shift > 0:
+                vjoy.set_button(1, 1)  # Press left
+                time.sleep(0.2)  # Let input settle
+                left_accum = 0
+                for i in range(shift):
+                    if stop_flag:
+                        break
+                    left_accum += 0.015
+                    timestamp = time.strftime('%Y%m%d_%H%M%S')
+                    filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
+                    save_screenshot(filename)
+                    
+                    angle = steering_wheel_capture()
+                    adjusted_angle = round(angle + left_accum, 3)
+                    print(f"[LEFT] Screenshot saved: {filename} | val: {adjusted_angle}")
+                    log_file.write(f"{os.path.basename(filename)},{adjusted_angle}\n")
+                    count += 1
+                    time.sleep(0.2)
+                vjoy.set_button(1, 0)  # Release left
 
             # === NUM5 ACTION ===
             vjoy.set_button(3, 1)
@@ -131,31 +135,34 @@ if __name__ == "__main__":
                 timestamp = time.strftime('%Y%m%d_%H%M%S')
                 filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
                 save_screenshot(filename)
+                
                 angle = steering_wheel_capture()
                 angle = round(angle, 3)
                 print(f"[NUM5] Screenshot saved: {filename} | val: {angle}")
                 log_file.write(f"{os.path.basename(filename)},{angle}\n")
                 count += 1
                 time.sleep(0.2)
-
-            # === RIGHT KEY ===
-            vjoy.set_button(2, 1)  # Press right
-            time.sleep(0.2)
-            right_accum = 0
-            for i in range(shift):
-                if stop_flag:
-                    break
-                right_accum -= 0.02
-                timestamp = time.strftime('%Y%m%d_%H%M%S')
-                filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
-                save_screenshot(filename)
-                angle = steering_wheel_capture()
-                adjusted_angle = round(angle + right_accum, 3)
-                print(f"[RIGHT] Screenshot saved: {filename} | val: {adjusted_angle}")
-                log_file.write(f"{os.path.basename(filename)},{adjusted_angle}\n")
-                count += 1
+            
+            if shift > 0:
+                # === RIGHT KEY ===
+                vjoy.set_button(2, 1)  # Press right
                 time.sleep(0.2)
-            vjoy.set_button(2, 0)  # Release right
+                right_accum = 0
+                for i in range(shift):
+                    if stop_flag:
+                        break
+                    right_accum -=  0.015
+                    timestamp = time.strftime('%Y%m%d_%H%M%S')
+                    filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
+                    save_screenshot(filename)
+                    
+                    angle = steering_wheel_capture()
+                    adjusted_angle = round(angle + right_accum, 3)
+                    print(f"[RIGHT] Screenshot saved: {filename} | val: {adjusted_angle}")
+                    log_file.write(f"{os.path.basename(filename)},{adjusted_angle}\n")
+                    count += 1
+                    time.sleep(0.2)
+                vjoy.set_button(2, 0)  # Release right
 
             # === NUM5 AGAIN ===
             vjoy.set_button(3, 1)
@@ -168,6 +175,7 @@ if __name__ == "__main__":
                 timestamp = time.strftime('%Y%m%d_%H%M%S')
                 filename = os.path.join(output_dir, f'screenshot_{count}_{timestamp}.png')
                 save_screenshot(filename)
+                
                 angle = steering_wheel_capture()
                 angle = round(angle, 3)
                 print(f"[NUM5] Screenshot saved: {filename} | val: {angle}")
