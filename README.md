@@ -17,10 +17,10 @@ Beamng.Drive-AutoPilot implements an end-to-end vision-based steering controller
 
 ## Architectural Highlights
 
-- **Temporal Sequence Modeling**: Integrates `TimeDistributed` convolutional feature extractors with `LSTM` layers to capture steering momentum, yaw changes, and road curvature over sliding temporal windows (`SEQ_LENGTH = 5`).
-- **Data Balancing and Normalization**: Features a dataset curation pipeline (`Balance_data.py`) that bins steering angles, trims excessive zero-angle highway frames, and mitigates bias toward straight driving.
-- **Real-Time Telemetry Pipeline**: Captures game frames (`66x200` normalized YUV/RGB inputs) and maps analog steering wheel inputs using OpenCV and Windows API hooks.
-- **Closed-Loop Inference Engine**: Evaluates the trained model in real time (`test.py`), reading the live game viewport and injecting virtual steering inputs to drive autonomously.
+- Temporal Sequence Modeling: Integrates TimeDistributed convolutional feature extractors with LSTM layers to capture steering momentum, yaw changes, and road curvature over sliding temporal windows (SEQ_LENGTH = 5).
+- Data Balancing and Normalization: Features a dataset curation pipeline (Balance_data.py) that bins steering angles, trims excessive zero-angle highway frames, and mitigates bias toward straight driving.
+- Real-Time Telemetry Pipeline: Captures game frames (66x200 normalized YUV/RGB inputs) and maps analog steering wheel inputs using OpenCV and Windows API hooks.
+- Closed-Loop Inference Engine: Evaluates the trained model in real time (test.py), reading the live game viewport and injecting virtual steering inputs to drive autonomously.
 
 ---
 
@@ -43,15 +43,15 @@ Beamng.Drive-AutoPilot/
 ### 1. Model Architecture
 
 The neural network consumes a sliding window of sequential front-facing camera frames:
-- **Input Dimension**: `(Batch, 5, 66, 200, 3)`
-- **Feature Extractor**: 5 `TimeDistributed` 2D Convolutional layers with Strided Convolutions and ReLU activations
-- **Sequence Processing**: `LSTM(64)` layer capturing vehicle momentum and curvature transitions
-- **Dense Regressor**: Fully connected layers (`100 -> 50 -> 10 -> 1`) with Dropout regularization (`0.2`) outputting a continuous steering prediction in `[-1.0, 1.0]`.
+- Input Dimension: (Batch, 5, 66, 200, 3)
+- Feature Extractor: 5 TimeDistributed 2D Convolutional layers with Strided Convolutions and ReLU activations
+- Sequence Processing: LSTM(64) layer capturing vehicle momentum and curvature transitions
+- Dense Regressor: Fully connected layers (100 -> 50 -> 10 -> 1) with Dropout regularization (0.2) outputting a continuous steering prediction in [-1.0, 1.0].
 
-### 2. Dataset Balancing (`Balance_data.py`)
+### 2. Dataset Balancing (Balance_data.py)
 
-Driving datasets suffer from severe zero-bias (long straight segments). The balancing script:
-1. Parses `steering_log.txt` timestamps and corresponding frame filenames.
+Driving datasets frequently suffer from zero-bias (prolonged straight segments). The balancing script:
+1. Parses steering_log.txt timestamps and corresponding frame filenames.
 2. Constructs a histogram of steering values across 31 discrete bins.
 3. Subsamples dominant zero-angle bins according to a target threshold, ensuring balanced exposure to sharp turns, recovery maneuvers, and apex transitions.
 
@@ -93,7 +93,7 @@ Launch BeamNG.drive in windowed mode (e.g., 1280x720 or 800x600). Start the capt
 ```bash
 python Capture.py
 ```
-Outputs are written to `Non_map_dataset/Frames/` and `Non_map_dataset/steering_log.txt`.
+Outputs are written to Non_map_dataset/Frames/ and Non_map_dataset/steering_log.txt.
 
 ### Step 2: Balance Dataset
 Run the balancing utility to eliminate straight-line bias:
@@ -119,4 +119,4 @@ The agent reads screen inputs in real time, computes target steering commands, a
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.\n
+This project is licensed under the MIT License.
